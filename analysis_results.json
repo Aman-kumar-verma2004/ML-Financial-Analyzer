@@ -1,0 +1,398 @@
+[
+  {
+    "company": "ABB",
+    "strength": "Weak"
+  },
+  {
+    "company": "ADANIENSOL",
+    "strength": "Weak"
+  },
+  {
+    "company": "ADANIENT",
+    "strength": "Weak"
+  },
+  {
+    "company": "ADANIGREEN",
+    "strength": "Weak"
+  },
+  {
+    "company": "ADANIPORTS",
+    "strength": "Weak"
+  },
+  {
+    "company": "ADANIPOWER",
+    "strength": "Weak"
+  },
+  {
+    "company": "AMBUJACEM",
+    "strength": "Weak"
+  },
+  {
+    "company": "APOLLOHOSP",
+    "strength": "Weak"
+  },
+  {
+    "company": "ASIANPAINT",
+    "strength": "Weak"
+  },
+  {
+    "company": "ATGL",
+    "strength": "Weak"
+  },
+  {
+    "company": "AXISBANK",
+    "strength": "Weak"
+  },
+  {
+    "company": "BAJAJ-AUTO",
+    "strength": "Weak"
+  },
+  {
+    "company": "BAJAJFINSV",
+    "strength": "Weak"
+  },
+  {
+    "company": "BAJAJHLDNG",
+    "strength": "Weak"
+  },
+  {
+    "company": "BAJFINANCE",
+    "strength": "Weak"
+  },
+  {
+    "company": "BANKBARODA",
+    "strength": "Weak"
+  },
+  {
+    "company": "BEL",
+    "strength": "Weak"
+  },
+  {
+    "company": "BHARTIARTL",
+    "strength": "Weak"
+  },
+  {
+    "company": "BHEL",
+    "strength": "Weak"
+  },
+  {
+    "company": "BOSCHLTD",
+    "strength": "Weak"
+  },
+  {
+    "company": "BPCL",
+    "strength": "Weak"
+  },
+  {
+    "company": "BRITANNIA",
+    "strength": "Weak"
+  },
+  {
+    "company": "CANBK",
+    "strength": "Weak"
+  },
+  {
+    "company": "CHOLAFIN",
+    "strength": "Weak"
+  },
+  {
+    "company": "CIPLA",
+    "strength": "Weak"
+  },
+  {
+    "company": "COALINDIA",
+    "strength": "Weak"
+  },
+  {
+    "company": "DABUR",
+    "strength": "Weak"
+  },
+  {
+    "company": "DLF",
+    "strength": "Weak"
+  },
+  {
+    "company": "DMART",
+    "strength": "Weak"
+  },
+  {
+    "company": "DRREDDY",
+    "strength": "Weak"
+  },
+  {
+    "company": "EICHERMOT",
+    "strength": "Weak"
+  },
+  {
+    "company": "GAIL",
+    "strength": "Weak"
+  },
+  {
+    "company": "GODREJCP",
+    "strength": "Weak"
+  },
+  {
+    "company": "GRASIM",
+    "strength": "Weak"
+  },
+  {
+    "company": "HAL",
+    "strength": "Weak"
+  },
+  {
+    "company": "HAVELLS",
+    "strength": "Weak"
+  },
+  {
+    "company": "HCLTECH",
+    "strength": "Weak"
+  },
+  {
+    "company": "HDFCBANK",
+    "strength": "Weak"
+  },
+  {
+    "company": "HDFCLIFE",
+    "strength": "Weak"
+  },
+  {
+    "company": "HEROMOTOCO",
+    "strength": "Weak"
+  },
+  {
+    "company": "HINDALCO",
+    "strength": "Weak"
+  },
+  {
+    "company": "HINDUNILVR",
+    "strength": "Weak"
+  },
+  {
+    "company": "ICICIBANK",
+    "strength": "Weak"
+  },
+  {
+    "company": "ICICIGI",
+    "strength": "Weak"
+  },
+  {
+    "company": "ICICIPRULI",
+    "strength": "Weak"
+  },
+  {
+    "company": "INDIGO",
+    "strength": "Weak"
+  },
+  {
+    "company": "INDUSINDBK",
+    "strength": "Weak"
+  },
+  {
+    "company": "INFY",
+    "strength": "Weak"
+  },
+  {
+    "company": "IOC",
+    "strength": "Weak"
+  },
+  {
+    "company": "IRCTC",
+    "strength": "Weak"
+  },
+  {
+    "company": "IRFC",
+    "strength": "Weak"
+  },
+  {
+    "company": "ITC",
+    "strength": "Weak"
+  },
+  {
+    "company": "JINDALSTEL",
+    "strength": "Weak"
+  },
+  {
+    "company": "JIOFIN",
+    "strength": "Weak"
+  },
+  {
+    "company": "JSWENERGY",
+    "strength": "Weak"
+  },
+  {
+    "company": "JSWSTEEL",
+    "strength": "Weak"
+  },
+  {
+    "company": "KOTAKBANK",
+    "strength": "Weak"
+  },
+  {
+    "company": "LICI",
+    "strength": "Weak"
+  },
+  {
+    "company": "LODHA",
+    "strength": "Weak"
+  },
+  {
+    "company": "LT",
+    "strength": "Weak"
+  },
+  {
+    "company": "LTIM",
+    "strength": "Weak"
+  },
+  {
+    "company": "M&M",
+    "strength": "Weak"
+  },
+  {
+    "company": "MARUTI",
+    "strength": "Weak"
+  },
+  {
+    "company": "MOTHERSON",
+    "strength": "Weak"
+  },
+  {
+    "company": "NAUKRI",
+    "strength": "Weak"
+  },
+  {
+    "company": "NESTLEIND",
+    "strength": "Weak"
+  },
+  {
+    "company": "NHPC",
+    "strength": "Weak"
+  },
+  {
+    "company": "NTPC",
+    "strength": "Weak"
+  },
+  {
+    "company": "ONGC",
+    "strength": "Weak"
+  },
+  {
+    "company": "PFC",
+    "strength": "Weak"
+  },
+  {
+    "company": "PIDILITIND",
+    "strength": "Weak"
+  },
+  {
+    "company": "PNB",
+    "strength": "Weak"
+  },
+  {
+    "company": "POWERGRID",
+    "strength": "Weak"
+  },
+  {
+    "company": "RECLTD",
+    "strength": "Weak"
+  },
+  {
+    "company": "RELIANCE",
+    "strength": "Weak"
+  },
+  {
+    "company": "SBILIFE",
+    "strength": "Weak"
+  },
+  {
+    "company": "SBIN",
+    "strength": "Weak"
+  },
+  {
+    "company": "SHREECEM",
+    "strength": "Weak"
+  },
+  {
+    "company": "SHRIRAMFIN",
+    "strength": "Weak"
+  },
+  {
+    "company": "SIEMENS",
+    "strength": "Weak"
+  },
+  {
+    "company": "SUNPHARMA",
+    "strength": "Weak"
+  },
+  {
+    "company": "TATACONSUM",
+    "strength": "Weak"
+  },
+  {
+    "company": "TATAMOTORS",
+    "strength": "Weak"
+  },
+  {
+    "company": "TATAPOWER",
+    "strength": "Weak"
+  },
+  {
+    "company": "TATASTEEL",
+    "strength": "Weak"
+  },
+  {
+    "company": "TCS",
+    "strength": "Weak"
+  },
+  {
+    "company": "TECHM",
+    "strength": "Weak"
+  },
+  {
+    "company": "TITAN",
+    "strength": "Weak"
+  },
+  {
+    "company": "TORNTPHARM",
+    "strength": "Weak"
+  },
+  {
+    "company": "TRENT",
+    "strength": "Weak"
+  },
+  {
+    "company": "TVSMOTOR",
+    "strength": "Weak"
+  },
+  {
+    "company": "ULTRACEMCO",
+    "strength": "Weak"
+  },
+  {
+    "company": "UNIONBANK",
+    "strength": "Weak"
+  },
+  {
+    "company": "UNITDSPR",
+    "strength": "Weak"
+  },
+  {
+    "company": "VBL",
+    "strength": "Weak"
+  },
+  {
+    "company": "VEDL",
+    "strength": "Weak"
+  },
+  {
+    "company": "WIPRO",
+    "strength": "Weak"
+  },
+  {
+    "company": "ZOMATO",
+    "strength": "Weak"
+  },
+  {
+    "company": "ZYDUSLIFE",
+    "strength": "Weak"
+  }
+]
