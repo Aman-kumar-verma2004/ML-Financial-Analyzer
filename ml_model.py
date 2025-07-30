@@ -11,8 +11,7 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-# ✅ Fix Path (backend/data ke andar JSON files)
-DATA_DIR = os.path.join(os.path.dirname(__file__), "backend", "data")
+DATA_DIR = "backend/data"   # ✅ सही path डालें
 
 def analyze_company(data):
     """ 🔍 Analyze financial data & generate Pros and Cons """
@@ -28,62 +27,75 @@ def analyze_company(data):
 
     # ✅ Pros (Strong Points)
     if roe > 15:
-        analysis_text["pros"].append(f"Company has a strong Return on Equity (ROE) of {roe}%.")
+        analysis_text["pros"].append(f"✅ High ROE of {roe}%.")
     if roce > 15:
-        analysis_text["pros"].append(f"Company shows excellent Return on Capital Employed (ROCE) of {roce}%.")
+        analysis_text["pros"].append(f"✅ Excellent ROCE of {roce}%.")
     if book_value > 500:
-        analysis_text["pros"].append(f"Company has a high book value of {book_value} INR.")
+        analysis_text["pros"].append(f"✅ High book value of {book_value} INR.")
 
     # ✅ Cons (Weak Points)
     if roe < 10:
-        analysis_text["cons"].append(f"Company has a low Return on Equity (ROE) of only {roe}%.")
+        analysis_text["cons"].append(f"❌ Low ROE of {roe}%.")
     if roce < 10:
-        analysis_text["cons"].append(f"Company has a weak ROCE of {roce}%.")
+        analysis_text["cons"].append(f"❌ Weak ROCE of {roce}%.")
     if book_value < 100:
-        analysis_text["cons"].append(f"Company has a very low book value of {book_value} INR.")
+        analysis_text["cons"].append(f"❌ Very low book value of {book_value} INR.")
 
-    # ✅ If no Pros/Cons found
+    # ✅ Labeling Logic
+    if roe > 18 and roce > 18:
+        strength = "Strong"
+    elif roe > 10 or roce > 10:
+        strength = "Moderate"
+    else:
+        strength = "Weak"
+
+    # ✅ अगर pros/cons खाली हैं तो default add करें
     if not analysis_text["pros"]:
-        analysis_text["pros"].append("No strong positive indicators found.")
+        analysis_text["pros"].append("No major strengths found.")
     if not analysis_text["cons"]:
-        analysis_text["cons"].append("No major weaknesses detected.")
+        analysis_text["cons"].append("No major weaknesses found.")
 
-    return analysis_text
+    return analysis_text, strength
 
-# ✅ Iterate through all JSON files in backend/data
+
+# ✅ Iterate through all JSON files
 for file in os.listdir(DATA_DIR):
     if file.endswith(".json"):
         path = os.path.join(DATA_DIR, file)
 
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"❌ ERROR reading {file}: {e}")
+            continue
 
-            # ✅ 🚨 SAFETY CHECK: Agar 'company' key missing hai, skip file
-            if "company" not in data:
-                print(f"⚠️ Skipping {file} → 'company' key missing.")
-                continue
+        # ✅ अगर `company` key missing है → SKIP करें
+        if "company" not in data:
+            print(f"⚠️ SKIPPING {file} → No 'company' key found")
+            continue
 
-            company_id = data["company"].get("id", "").strip()
-            company_name = data["company"].get("company_name", "").strip()
+        company_id = data["company"].get("id", "").strip()
+        company_name = data["company"].get("company_name", "").strip()
 
-            insights = analyze_company(data)
+        insights, strength = analyze_company(data)
 
-            pros_text = " | ".join(insights["pros"])
-            cons_text = " | ".join(insights["cons"])
+        pros_text = " | ".join(insights["pros"])
+        cons_text = " | ".join(insights["cons"])
 
-            # ✅ Update MySQL Table
-            query = """
-            UPDATE ml 
-            SET pros = %s, cons = %s 
-            WHERE company = %s
-            """
-            values = (pros_text, cons_text, company_id)
+        # ✅ Update MySQL Table with pros, cons, and strength
+        query = """
+        UPDATE ml 
+        SET pros = %s, cons = %s, strngth = %s 
+        WHERE company = %s
+        """
+        values = (pros_text, cons_text, strength, company_id)
 
-            try:
-                cursor.execute(query, values)
-                print(f"✅ {company_name} → Pros & Cons Updated")
-            except Exception as e:
-                print(f"❌ Error for {company_name}: {e}")
+        try:
+            cursor.execute(query, values)
+            print(f"✅ {company_name} → {strength} updated")
+        except Exception as e:
+            print(f"❌ Error for {company_name}: {e}")
 
 # ✅ Commit changes
 db.commit()
