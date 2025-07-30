@@ -10,8 +10,17 @@ from sklearn.metrics import accuracy_score, classification_report
 import joblib
 
 DATA_DIR = "data"
+MODEL_FILE = "model.joblib"
+
+def safe_float(value, default=0.0):
+    """Safely convert a value to float, returning a default if conversion fails."""
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
 
 def extract_features(file_path):
+    """Extracts features from a JSON file, handling missing or malformed data."""
     with open(file_path, 'r') as f:
         data = json.load(f)
 
@@ -20,84 +29,121 @@ def extract_features(file_path):
     profit = data.get("data", {}).get("profitandloss", [])
     balance = data.get("data", {}).get("balancesheet", [])
 
-    # Basic fields
-    roe = float(company.get("roe_percentage") or 0)
-    sales_growth = float(analysis.get("sales_growth") or 0)
-    dividend = float(analysis.get("dividend_payout") or 0)
+    roe = safe_float(company.get("roe_percentage"))
+    sales_growth = safe_float(analysis.get("sales_growth"))
+    dividend = safe_float(analysis.get("dividend_payout"))
 
-    # Profit margin = net profit / sales
-    try:
-        latest = profit[-1] if profit else {}
-        net_profit = float(latest.get("net_profit") or 1)
-        sales = float(latest.get("sales") or 1)
-        profit_margin = (net_profit / sales) * 100
-    except:
-        profit_margin = 0
+    profit_margin = 0.0
+    if profit:
+        latest_profit = profit[-1]
+        net_profit = safe_float(latest_profit.get("net_profit"))
+        sales = safe_float(latest_profit.get("sales"))
+        if sales > 0:
+            profit_margin = (net_profit / sales) * 100
 
-    # Debt to Equity = borrowings / reserves
-    try:
-        latest_bal = balance[-1] if balance else {}
-        borrowings = float(latest_bal.get("borrowings") or 0)
-        reserves = float(latest_bal.get("reserves") or 1)
-        debt_to_equity = borrowings / reserves
-    except:
-        debt_to_equity = 0
+    debt_to_equity = 0.0
+    if balance:
+        latest_balance = balance[-1]
+        borrowings = safe_float(latest_balance.get("borrowings"))
+        reserves = safe_float(latest_balance.get("reserves"))
+        if reserves > 0:
+            debt_to_equity = borrowings / reserves
 
     return {
         "roe": roe,
         "sales_growth": sales_growth,
         "dividend": dividend,
         "profit_margin": profit_margin,
-        "debt_to_equity": debt_to_equity
+        "debt_to_equity": debt_to_equity,
     }
 
-def label_data(file_path):
-    x = extract_features(file_path)
-    if x["roe"] > 20 and x["sales_growth"] > 15 and x["profit_margin"] > 15:
+def label_data(features):
+    """Labels the data based on extracted features."""
+    if (
+        features["roe"] > 15 and 
+        features["sales_growth"] > 10 and 
+        features["profit_margin"] > 10
+    ):
         return "Strong"
-    elif x["roe"] > 10 and x["sales_growth"] > 10:
+    elif (
+        features["roe"] > 8 and 
+        features["sales_growth"] > 5 and 
+        features["profit_margin"] > 5
+    ):
         return "Moderate"
     else:
         return "Weak"
 
 def main():
+    if not os.path.isdir(DATA_DIR):
+        print(f"Error: Data directory '{DATA_DIR}' not found.")
+        return
+
     X = []
     y = []
+    filenames = []
 
+    print(f"Processing files in '{DATA_DIR}'...")
     for filename in os.listdir(DATA_DIR):
         if filename.endswith(".json"):
             path = os.path.join(DATA_DIR, filename)
             try:
                 features = extract_features(path)
-                label = label_data(path)
+                label = label_data(features)
                 X.append(list(features.values()))
                 y.append(label)
+                filenames.append(filename)
+            except json.JSONDecodeError:
+                print(f"Skipping {filename}: Invalid JSON format.")
             except Exception as e:
-                print(f"Error processing {filename}: {e}")
+                print(f"An error occurred while processing {filename}: {e}")
 
-    # Convert to numpy arrays
+    if not X:
+        print("No valid data found to train the model.")
+        return
+
     X = np.array(X)
     y = np.array(y)
 
-    # Train-Test Split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    if len(X) < 2:
+        print("Not enough data to perform a train-test split.")
+        return
 
-    # ML Pipeline with StandardScaler + RandomForest
+    # Train-Test Split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    # ML Pipeline
     pipe = Pipeline([
         ('scaler', StandardScaler()),
         ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
     ])
 
+    print("
+Training the model...")
     pipe.fit(X_train, y_train)
 
     # Evaluate Model
+    print("
+Evaluating the model...")
     y_pred = pipe.predict(X_test)
-    print("Accuracy:", accuracy_score(y_test, y_pred))
-    print(classification_report(y_test, y_pred))
+    
+    # Ensure there are predicted samples to evaluate
+    if y_test.size > 0:
+        print("Accuracy:", accuracy_score(y_test, y_pred))
+        print("Classification Report:")
+        print(classification_report(y_test, y_pred))
+    else:
+        print("No test data to evaluate.")
 
     # Save the model
-    joblib.dump(pipe, "model.joblib")
-    print("✅ Model saved as model.joblib")
+    try:
+        joblib.dump(pipe, MODEL_FILE)
+        print(f"
+✅ Model saved successfully as {MODEL_FILE}")
+    except IOError as e:
+        print(f"Error saving model: {e}")
 
 if __name__ == "__main__":
     main()

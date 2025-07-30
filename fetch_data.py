@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_KAY = os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://bluemutualfund.in/server/api/company.php"
 EXCEL_FILE = "company_id.xlsx"
 SAVE_DATA = "data"
@@ -14,7 +14,7 @@ SAVE_DATA = "data"
 os.makedirs(SAVE_DATA, exist_ok=True)
 
 def fetch_data(symbol):
-    url = f"{BASE_URL}?id={symbol}&api_key={API_KAY}"
+    url = f"{BASE_URL}?id={symbol}&api_key={API_KEY}"
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()

@@ -5,24 +5,28 @@ import mysql.connector
 import joblib
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
-# Load model
-model = joblib.load("model.joblib")
-
-# MySQL DB setup
-db = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),
-    port=os.getenv("DB_PORT"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASS"),
-    database=os.getenv("DB_NAME")
-)
-cursor = db.cursor()
-
+# --- Configuration ---
+MODEL_PATH = "model.joblib"
 DATA_DIR = "data"
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_NAME = os.getenv("DB_NAME")
+
+# --- Helper Functions ---
+def safe_float(value, default=0.0):
+    """Safely convert to float, returning a default on failure."""
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
 
 def extract_features(file_path):
+    """Extracts features from a JSON file, ensuring data integrity."""
     with open(file_path, 'r') as f:
         data = json.load(f)
 
@@ -31,84 +35,140 @@ def extract_features(file_path):
     profit = data.get("data", {}).get("profitandloss", [])
     balance = data.get("data", {}).get("balancesheet", [])
 
-    try:
-        roe = float(company.get("roe_percentage") or 0)
-        sales_growth = float(analysis.get("sales_growth") or 0)
-        dividend = float(analysis.get("dividend_payout") or 0)
+    roe = safe_float(company.get("roe_percentage"))
+    sales_growth = safe_float(analysis.get("sales_growth"))
+    dividend = safe_float(analysis.get("dividend_payout"))
 
-        latest = profit[-1] if profit else {}
-        net_profit = float(latest.get("net_profit") or 1)
-        sales = float(latest.get("sales") or 1)
-        profit_margin = (net_profit / sales) * 100
+    profit_margin = 0.0
+    if profit:
+        latest_profit = profit[-1]
+        net_profit = safe_float(latest_profit.get("net_profit"))
+        sales = safe_float(latest_profit.get("sales"))
+        if sales > 0:
+            profit_margin = (net_profit / sales) * 100
 
-        latest_bal = balance[-1] if balance else {}
-        borrowings = float(latest_bal.get("borrowings") or 0)
-        reserves = float(latest_bal.get("reserves") or 1)
-        debt_to_equity = borrowings / reserves
+    debt_to_equity = 0.0
+    if balance:
+        latest_balance = balance[-1]
+        borrowings = safe_float(latest_balance.get("borrowings"))
+        reserves = safe_float(latest_balance.get("reserves"))
+        if reserves > 0:
+            debt_to_equity = borrowings / reserves
 
-        return {
-            "roe": roe,
-            "sales_growth": sales_growth,
-            "dividend": dividend,
-            "profit_margin": profit_margin,
-            "debt_to_equity": debt_to_equity
-        }
-    except:
-        return None
+    return {
+        "roe": roe,
+        "sales_growth": sales_growth,
+        "dividend": dividend,
+        "profit_margin": profit_margin,
+        "debt_to_equity": debt_to_equity,
+    }
 
-def pick_pros_cons(analysis):
-    pros = []
-    cons = []
-
-    if not isinstance(analysis, list):
+def pick_pros_cons(analysis_points):
+    """Categorizes analysis points into pros and cons."""
+    pros, cons = [], []
+    if not isinstance(analysis_points, list):
         return pros, cons
 
-    for point in analysis:
-        if any(val in point.lower() for val in ["debt-free", "growth", "dividend", "healthy", "good", "roe", "profit"]):
+    pro_keywords = ["debt-free", "growth", "dividend", "healthy", "good", "roe", "profit"]
+    con_keywords = ["poor", "low", "not", "decline", "pressure"]
+
+    for point in analysis_points:
+        point_lower = point.lower()
+        if any(kw in point_lower for kw in pro_keywords):
             pros.append(point)
-        elif any(val in point.lower() for val in ["poor", "low", "not", "decline"]):
+        elif any(kw in point_lower for kw in con_keywords):
             cons.append(point)
+            
+    return pros[:3], cons[:3]  # Return top 3 of each
 
-    return pros[:3], cons[:3]  # only top 3
-
-def store_to_db(company_id, pros, cons, label):
+def store_to_db(cursor, company_id, pros, cons, label):
+    """Insert or update a company's analysis in the database."""
+    sql = """
+    INSERT INTO ml (company, pros, cons, strngth) 
+    VALUES (%s, %s, %s, %s)
+    ON DUPLICATE KEY UPDATE 
+        pros = VALUES(pros),
+        cons = VALUES(cons),
+        strngth = VALUES(strngth)
+    """
     try:
-        cursor.execute(
-            "INSERT INTO ml (company, pros, cons, strngth) VALUES (%s, %s, %s, %s)",
-            (company_id, "\n".join(pros), "\n".join(cons), label)
-        )
-        db.commit()
-        print(f"✅ Inserted → {company_id} ({label})")
-    except Exception as e:
-        print(f"❌ DB insert failed for {company_id}: {e}")
+        cursor.execute(sql, (company_id, "\n".join(pros), "\n".join(cons), label))
+        print(f"✅ Upserted → {company_id} ({label})")
+    except mysql.connector.Error as err:
+        print(f"❌ DB insert/update failed for {company_id}: {err}")
 
 def main():
+    # --- Pre-run Checks ---
+    if not all([DB_HOST, DB_USER, DB_PASS, DB_NAME]):
+        print("Error: Database environment variables are not set.")
+        return
+
+    if not os.path.exists(MODEL_PATH):
+        print(f"Error: Model file not found at '{MODEL_PATH}'")
+        return
+
+    if not os.path.isdir(DATA_DIR):
+        print(f"Error: Data directory '{DATA_DIR}' not found.")
+        return
+
+    # --- Load Model ---
+    try:
+        model = joblib.load(MODEL_PATH)
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        return
+
+    # --- Database Connection ---
+    db, cursor = None, None
+    try:
+        db = mysql.connector.connect(
+            host=DB_HOST, port=DB_PORT, user=DB_USER, 
+            password=DB_PASS, database=DB_NAME
+        )
+        cursor = db.cursor()
+    except mysql.connector.Error as err:
+        print(f"Database connection failed: {err}")
+        return
+
+    # --- Main Processing Loop ---
+    print("Starting data processing and database insertion...")
     for filename in os.listdir(DATA_DIR):
-        if filename.endswith(".json"):
-            company_id = filename.replace(".json", "")
-            path = os.path.join(DATA_DIR, filename)
+        if not filename.endswith(".json"):
+            continue
 
-            try:
-                with open(path, 'r') as f:
-                    data = json.load(f)
+        company_id = filename.replace(".json", "")
+        path = os.path.join(DATA_DIR, filename)
 
-                features = extract_features(path)
-                if features is None:
-                    print(f"⚠️ Skipped {company_id}: invalid data")
-                    continue
+        try:
+            features = extract_features(path)
+            if not features:
+                print(f"⚠️ Skipped {company_id}: could not extract features.")
+                continue
 
-                row = np.array([list(features.values())])
-                label = model.predict(row)[0]
+            row = np.array(list(features.values())).reshape(1, -1)
+            label = model.predict(row)[0]
 
-                analysis = data.get("analysis", {}).get("points", [])
-                pros, cons = pick_pros_cons(analysis)
+            with open(path, 'r') as f:
+                data = json.load(f)
+            
+            analysis_points = data.get("analysis", {}).get("points", [])
+            pros, cons = pick_pros_cons(analysis_points)
 
-                store_to_db(company_id, pros, cons, label)
+            store_to_db(cursor, company_id, pros, cons, label)
+            db.commit()
 
-            except Exception as e:
-                print(f"❌ Failed for {company_id}: {e}")
+        except json.JSONDecodeError:
+            print(f"❌ Failed for {company_id}: Invalid JSON.")
+        except Exception as e:
+            print(f"❌ An unexpected error occurred for {company_id}: {e}")
 
-    print("🎉 All data inserted into MySQL.")
+    # --- Cleanup ---
+    if db and db.is_connected():
+        cursor.close()
+        db.close()
+        print("\nDatabase connection closed.")
+    
+    print("🎉 All data processed.")
 
 if __name__ == "__main__":
     main()

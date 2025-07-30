@@ -5,12 +5,20 @@ import numpy as np
 
 MODEL_PATH = "model.joblib"
 DATA_DIR = "data"
+RESULTS_FILE = "analysis_results.json"
 
 # Load trained model
-model = joblib.load(MODEL_PATH)
+try:
+    model = joblib.load(MODEL_PATH)
+except FileNotFoundError:
+    print(f"Error: Model file not found at {MODEL_PATH}")
+    exit(1)
+except Exception as e:
+    print(f"Error loading model: {e}")
+    exit(1)
 
-# Same feature extractor used during training
 def extract_features(file_path):
+    """Extracts features from a JSON file, handling missing data."""
     with open(file_path, 'r') as f:
         data = json.load(f)
 
@@ -19,25 +27,31 @@ def extract_features(file_path):
     profit = data.get("data", {}).get("profitandloss", [])
     balance = data.get("data", {}).get("balancesheet", [])
 
-    roe = float(company.get("roe_percentage", 0))
-    sales_growth = float(analysis.get("sales_growth", 0))
-    dividend = float(analysis.get("dividend_payout", 0))
+    def safe_float(value, default=0.0):
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return default
 
-    try:
-        latest = profit[-1] if profit else {}
-        net_profit = float(latest.get("net_profit", 1))
-        sales = float(latest.get("sales", 1))
-        profit_margin = (net_profit / sales) * 100
-    except:
-        profit_margin = 0
+    roe = safe_float(company.get("roe_percentage"))
+    sales_growth = safe_float(analysis.get("sales_growth"))
+    dividend = safe_float(analysis.get("dividend_payout"))
 
-    try:
-        latest_bal = balance[-1] if balance else {}
-        borrowings = float(latest_bal.get("borrowings", 0))
-        reserves = float(latest_bal.get("reserves", 1))
-        debt_to_equity = borrowings / reserves
-    except:
-        debt_to_equity = 0
+    profit_margin = 0.0
+    if profit:
+        latest = profit[-1]
+        net_profit = safe_float(latest.get("net_profit"))
+        sales = safe_float(latest.get("sales"))
+        if sales > 0:
+            profit_margin = (net_profit / sales) * 100
+
+    debt_to_equity = 0.0
+    if balance:
+        latest_bal = balance[-1]
+        borrowings = safe_float(latest_bal.get("borrowings"))
+        reserves = safe_float(latest_bal.get("reserves"))
+        if reserves > 0:
+            debt_to_equity = borrowings / reserves
 
     return [
         roe,
@@ -48,17 +62,40 @@ def extract_features(file_path):
     ]
 
 def main():
+    if not os.path.isdir(DATA_DIR):
+        print(f"Error: Data directory '{DATA_DIR}' not found.")
+        return
+
+    results = {}
     for filename in os.listdir(DATA_DIR):
         if filename.endswith(".json"):
             file_path = os.path.join(DATA_DIR, filename)
+            symbol = filename.replace(".json", "")
             try:
                 features = extract_features(file_path)
-                pred = model.predict([features])[0]
+                # Scikit-learn models expect a 2D array
+                features_array = np.array(features).reshape(1, -1)
+                prediction = model.predict(features_array)[0]
+                
+                # Convert numpy types to native Python types for JSON serialization
+                if isinstance(prediction, np.generic):
+                    prediction = prediction.item()
 
-                symbol = filename.replace(".json", "")
-                print(f"{symbol} → {pred}")
+                results[symbol] = prediction
+                print(f"{symbol} → {prediction}")
+
+            except json.JSONDecodeError:
+                print(f"Skipping {filename}: Invalid JSON format.")
             except Exception as e:
-                print(f"Failed for {filename}: {e}")
+                print(f"An error occurred while processing {filename}: {e}")
+
+    try:
+        with open(RESULTS_FILE, 'w') as f:
+            json.dump(results, f, indent=4)
+        print(f"Analysis complete. Results saved to {RESULTS_FILE}")
+    except IOError as e:
+        print(f"Error writing results to {RESULTS_FILE}: {e}")
+
 
 if __name__ == "__main__":
     main()
